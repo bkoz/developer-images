@@ -215,157 +215,113 @@ COPY --chown=0:0 podman-wrapper.sh /usr/bin/podman.wrapper
 RUN mv /usr/bin/podman /usr/bin/podman.orig
 
 ## shellcheck
-RUN <<EOF
-dnf install -y xz
-set -euf -o pipefail
-TEMP_DIR="$(mktemp -d)"
-cd "${TEMP_DIR}"
-SHELL_CHECK_VERSION="0.8.0"
-SHELL_CHECK_ARCH="x86_64"
-SHELL_CHECK_TGZ="shellcheck-v${SHELL_CHECK_VERSION}.linux.${SHELL_CHECK_ARCH}.tar.xz"
-SHELL_CHECK_TGZ_URL="https://github.com/koalaman/shellcheck/releases/download/v${SHELL_CHECK_VERSION}/${SHELL_CHECK_TGZ}"
-curl -sSLO "${SHELL_CHECK_TGZ_URL}"
-tar -xvf "${SHELL_CHECK_TGZ}"
-mv "${TEMP_DIR}"/shellcheck-v${SHELL_CHECK_VERSION}/shellcheck /bin/shellcheck
-cd -
-rm -rf "${TEMP_DIR}"
-EOF
+RUN dnf install -y xz \
+    && set -euf -o pipefail \
+    && TEMP_DIR="$(mktemp -d)" \
+    && cd "${TEMP_DIR}" \
+    && SHELL_CHECK_VERSION="0.8.0" \
+    && SHELL_CHECK_ARCH="x86_64" \
+    && SHELL_CHECK_TGZ="shellcheck-v${SHELL_CHECK_VERSION}.linux.${SHELL_CHECK_ARCH}.tar.xz" \
+    && SHELL_CHECK_TGZ_URL="https://github.com/koalaman/shellcheck/releases/download/v${SHELL_CHECK_VERSION}/${SHELL_CHECK_TGZ}" \
+    && curl -sSLO "${SHELL_CHECK_TGZ_URL}" \
+    && tar -xvf "${SHELL_CHECK_TGZ}" \
+    && mv "${TEMP_DIR}"/shellcheck-v${SHELL_CHECK_VERSION}/shellcheck /bin/shellcheck \
+    && cd - \
+    && rm -rf "${TEMP_DIR}"
 
 ## krew
-RUN <<EOF
-set -euf -o pipefail
-TEMP_DIR="$(mktemp -d)"
-cd "${TEMP_DIR}"
-KREW_VERSION="0.4.4"
-KREW_ARCH="linux_amd64"
-KREW_TGZ="krew-${KREW_ARCH}.tar.gz"
-KREW_TGZ_URL="https://github.com/kubernetes-sigs/krew/releases/download/v${KREW_VERSION}/${KREW_TGZ}"
-curl -sSLO "${KREW_TGZ_URL}"
-curl -sSLO "${KREW_TGZ_URL}.sha256"
-
-# File ${KREW_TGZ_URL}.sha256 has invalid format to be checked with sha256sum.
-# It needs to create a valid one.
-echo "$(cat ${KREW_TGZ}.sha256)  ${KREW_TGZ}" > "${KREW_TGZ}.sha256"
-
-sha256sum -c "${KREW_TGZ}.sha256" 2>&1 | grep OK
-
-tar -zxvf "${KREW_TGZ}"
-./"krew-${KREW_ARCH}" install krew
-echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> /home/user/.bashrc
-export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-# kubens and kubectx
-kubectl krew install ns
-kubectl krew install ctx
-cd -
-rm -rf "${TEMP_DIR}"
-EOF
+RUN set -euf -o pipefail \
+    && TEMP_DIR="$(mktemp -d)" \
+    && cd "${TEMP_DIR}" \
+    && KREW_VERSION="0.4.4" \
+    && KREW_ARCH="linux_amd64" \
+    && KREW_TGZ="krew-${KREW_ARCH}.tar.gz" \
+    && KREW_TGZ_URL="https://github.com/kubernetes-sigs/krew/releases/download/v${KREW_VERSION}/${KREW_TGZ}" \
+    && curl -sSLO "${KREW_TGZ_URL}" \
+    && curl -sSLO "${KREW_TGZ_URL}.sha256" \
+    && echo "$(cat ${KREW_TGZ}.sha256)  ${KREW_TGZ}" > "${KREW_TGZ}.sha256" \
+    && sha256sum -c "${KREW_TGZ}.sha256" 2>&1 | grep OK \
+    && tar -zxvf "${KREW_TGZ}" \
+    && ./"krew-${KREW_ARCH}" install krew \
+    && echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> /home/user/.bashrc \
+    && export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH" \
+    && kubectl krew install ns \
+    && kubectl krew install ctx \
+    && cd - \
+    && rm -rf "${TEMP_DIR}"
 
 ## helm
-RUN <<EOF
-set -euf -o pipefail
-TEMP_DIR="$(mktemp -d)"
-cd "${TEMP_DIR}"
-HELM_VERSION="3.11.1"
-HELM_ARCH="linux-amd64"
-HELM_TGZ="helm-v${HELM_VERSION}-${HELM_ARCH}.tar.gz"
-HELM_TGZ_URL="https://get.helm.sh/${HELM_TGZ}"
-curl -sSLO "${HELM_TGZ_URL}"
-curl -sSLO "${HELM_TGZ_URL}.sha256sum"
-sha256sum -c "${HELM_TGZ}.sha256sum" 2>&1 | grep OK
-tar -zxvf "${HELM_TGZ}"
-mv "${HELM_ARCH}"/helm /usr/local/bin/helm
-cd -
-rm -rf "${TEMP_DIR}"
-EOF
+RUN set -euf -o pipefail \
+    && TEMP_DIR="$(mktemp -d)" \
+    && cd "${TEMP_DIR}" \
+    && HELM_VERSION="3.11.1" \
+    && HELM_ARCH="linux-amd64" \
+    && HELM_TGZ="helm-v${HELM_VERSION}-${HELM_ARCH}.tar.gz" \
+    && HELM_TGZ_URL="https://get.helm.sh/${HELM_TGZ}" \
+    && curl -sSLO "${HELM_TGZ_URL}" \
+    && curl -sSLO "${HELM_TGZ_URL}.sha256sum" \
+    && sha256sum -c "${HELM_TGZ}.sha256sum" 2>&1 | grep OK \
+    && tar -zxvf "${HELM_TGZ}" \
+    && mv "${HELM_ARCH}"/helm /usr/local/bin/helm \
+    && cd - \
+    && rm -rf "${TEMP_DIR}"
 
 ## tektoncd-cli
-RUN <<EOF
-set -euf -o pipefail
-TEMP_DIR="$(mktemp -d)"
-cd "${TEMP_DIR}"
-TKN_VERSION="0.32.1"
-TKN_ARCH="Linux_x86_64"
-TKN_TGZ="tkn_${TKN_VERSION}_${TKN_ARCH}.tar.gz"
-TKN_TGZ_URL="https://github.com/tektoncd/cli/releases/download/v${TKN_VERSION}/${TKN_TGZ}"
-TKN_CHEKSUMS_URL="https://github.com/tektoncd/cli/releases/download/v${TKN_VERSION}/checksums.txt"
-curl -sSLO "${TKN_TGZ_URL}"
-curl -sSLO "${TKN_CHEKSUMS_URL}"
-sha256sum --ignore-missing -c "checksums.txt" 2>&1 | grep OK
-tar -zxvf "${TKN_TGZ}"
-mv tkn /usr/local/bin/
-cd -
-rm -rf "${TEMP_DIR}"
-EOF
+RUN set -euf -o pipefail \
+    && TEMP_DIR="$(mktemp -d)" \
+    && cd "${TEMP_DIR}" \
+    && TKN_VERSION="0.32.1" \
+    && TKN_ARCH="Linux_x86_64" \
+    && TKN_TGZ="tkn_${TKN_VERSION}_${TKN_ARCH}.tar.gz" \
+    && TKN_TGZ_URL="https://github.com/tektoncd/cli/releases/download/v${TKN_VERSION}/${TKN_TGZ}" \
+    && TKN_CHEKSUMS_URL="https://github.com/tektoncd/cli/releases/download/v${TKN_VERSION}/checksums.txt" \
+    && curl -sSLO "${TKN_TGZ_URL}" \
+    && curl -sSLO "${TKN_CHEKSUMS_URL}" \
+    && sha256sum --ignore-missing -c "checksums.txt" 2>&1 | grep OK \
+    && tar -zxvf "${TKN_TGZ}" \
+    && mv tkn /usr/local/bin/ \
+    && cd - \
+    && rm -rf "${TEMP_DIR}"
 
 ## knative-cli
-RUN <<EOF
-set -euf -o pipefail
-TEMP_DIR="$(mktemp -d)"
-cd "${TEMP_DIR}"
-KN_VERSION="1.11.1"
-KN_ARCH="linux-amd64"
-KN_BIN="kn-${KN_ARCH}"
-KN_BIN_URL="https://github.com/knative/client/releases/download/v${KN_VERSION}/${KN_BIN}"
-KN_CHEKSUMS_URL="https://github.com/knative/client/releases/download/v${KN_VERSION}/checksums.txt"
-curl -sSLO "${KN_BIN_URL}"
-curl -sSLO "${KN_CHEKSUMS_URL}"
-sha256sum --ignore-missing -c "checksums.txt" 2>&1 | grep OK
-mv "${KN_BIN}" kn
-chmod +x kn
-mv kn /usr/local/bin
-cd -
-rm -rf "${TEMP_DIR}"
-EOF
+RUN set -euf -o pipefail \
+    && TEMP_DIR="$(mktemp -d)" \
+    && cd "${TEMP_DIR}" \
+    && KN_VERSION="1.11.1" \
+    && KN_ARCH="linux-amd64" \
+    && KN_BIN="kn-${KN_ARCH}" \
+    && KN_BIN_URL="https://github.com/knative/client/releases/download/v${KN_VERSION}/${KN_BIN}" \
+    && KN_CHEKSUMS_URL="https://github.com/knative/client/releases/download/v${KN_VERSION}/checksums.txt" \
+    && curl -sSLO "${KN_BIN_URL}" \
+    && curl -sSLO "${KN_CHEKSUMS_URL}" \
+    && sha256sum --ignore-missing -c "checksums.txt" 2>&1 | grep OK \
+    && mv "${KN_BIN}" kn \
+    && chmod +x kn \
+    && mv kn /usr/local/bin \
+    && cd - \
+    && rm -rf "${TEMP_DIR}"
 
 ## terraform-cli
-RUN <<EOF
-set -euf -o pipefail
-TEMP_DIR="$(mktemp -d)"
-cd "${TEMP_DIR}"
-TF_VERSION="1.6.2"
-TF_ARCH="linux_amd64"
-TF_ZIP="terraform_${TF_VERSION}_${TF_ARCH}.zip"
-TF_ZIP_URL="https://releases.hashicorp.com/terraform/${TF_VERSION}/${TF_ZIP}"
-TF_CHEKSUMS_URL="https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_SHA256SUMS"
-curl -sSLO "${TF_ZIP_URL}"
-curl -sSLO "${TF_CHEKSUMS_URL}"
-sha256sum --ignore-missing -c "terraform_${TF_VERSION}_SHA256SUMS" 2>&1 | grep OK
-unzip ${TF_ZIP}
-chmod +x terraform
-mv terraform /usr/local/bin
-cd -
-rm -rf "${TEMP_DIR}"
-EOF
+RUN set -euf -o pipefail \
+    && TEMP_DIR="$(mktemp -d)" \
+    && cd "${TEMP_DIR}" \
+    && TF_VERSION="1.6.2" \
+    && TF_ARCH="linux_amd64" \
+    && TF_ZIP="terraform_${TF_VERSION}_${TF_ARCH}.zip" \
+    && TF_ZIP_URL="https://releases.hashicorp.com/terraform/${TF_VERSION}/${TF_ZIP}" \
+    && TF_CHEKSUMS_URL="https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_SHA256SUMS" \
+    && curl -sSLO "${TF_ZIP_URL}" \
+    && curl -sSLO "${TF_CHEKSUMS_URL}" \
+    && sha256sum --ignore-missing -c "terraform_${TF_VERSION}_SHA256SUMS" 2>&1 | grep OK \
+    && unzip ${TF_ZIP} \
+    && chmod +x terraform \
+    && mv terraform /usr/local/bin \
+    && cd - \
+    && rm -rf "${TEMP_DIR}"
 
 ## skaffold
 RUN curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
     install skaffold /usr/local/bin/
-
-# e2fsprogs setup
-# Since e2fsprogs-static package has removed RHEL 8 distribution, it is not possible to install from the repository
-# https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/considerations_in_adopting_rhel_8/index#removed-packages_changes-to-packages
-RUN <<EOF
-set -euf -o pipefail
-TEMP_DIR="$(mktemp -d)"
-cd "${TEMP_DIR}"
-E2FSPROGS_VERSION="1.46.5"
-E2FSPROGS_TGZ="e2fsprogs-${E2FSPROGS_VERSION}.tar.gz"
-E2FSPROGS_TGZ_URL="https://mirrors.edge.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v${E2FSPROGS_VERSION}/${E2FSPROGS_TGZ}"
-E2FSPROGS_CHEKSUMS_URL="https://mirrors.edge.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v${E2FSPROGS_VERSION}/sha256sums.asc"
-curl -sSLO "${E2FSPROGS_TGZ_URL}"
-curl -sSLO "${E2FSPROGS_CHEKSUMS_URL}"
-sha256sum --ignore-missing -c "sha256sums.asc" 2>&1 | grep OK
-tar -zxvf "${E2FSPROGS_TGZ}"
-cd "e2fsprogs-${E2FSPROGS_VERSION}"
-mkdir build
-cd build
-../configure --prefix=/usr --with-root-prefix="" --enable-elf-shlibs --disable-evms
-make
-make install
-make install-libs
-cd -
-rm -rf "${TEMP_DIR}"
-EOF
 
 # Set permissions on /etc/passwd and /home to allow arbitrary users to write
 RUN chgrp -R 0 /home && chmod -R g=u /etc/passwd /etc/group /home
