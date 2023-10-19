@@ -174,7 +174,7 @@ RUN echo "source /usr/share/bash-completion/completions/git" >> /home/user/.bash
 
 # oc client and completion
 ENV OC_VERSION=4.13
-RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/${OC_VERSION}/linux/oc.tar.gz | tar -C /usr/local/bin -xz \
+RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable-${OC_VERSION}/openshift-client-linux.tar.gz | tar -C /usr/local/bin -xz \
     && chmod +x /usr/local/bin/oc /usr/local/bin/kubectl \
     && oc completion bash > /usr/share/bash-completion/completions/oc \
     && echo "source /usr/share/bash-completion/completions/oc" >> /home/user/.bashrc
